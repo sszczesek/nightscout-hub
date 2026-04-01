@@ -24,7 +24,11 @@ export default function HomePage() {
             Go to Dashboard
           </Link>
         </div>
-      </div>
+      </div><p className="text-xs text-gray-500 mt-10 text-center max-w-md">
+ Nightscout Hub was designed by Shane Szczesek to easily and quickly view multiple Nightscout pages at one time.  Nightscout Hub is for informational purposes only and is not a medical device.
+  Do not use this data for medical decisions. Always consult a healthcare professional.
+</p>
     </main>
   )
 }
+
