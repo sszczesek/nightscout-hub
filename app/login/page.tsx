@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { sendSignupNotification } from '@/lib/email/sendSignupNotification'
 
 export default function LoginPage() {
   const supabase = createClient()
@@ -21,7 +20,13 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({ email, password })
 
 if (data?.user?.email) {
-  await sendSignupNotification(data.user.email)
+  await fetch('/api/notify-signup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email: data.user.email }),
+  })
 }
       if (error) return setError(error.message)
       alert('Check your email to confirm your account.')
