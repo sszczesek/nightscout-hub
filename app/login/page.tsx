@@ -19,16 +19,18 @@ export default function LoginPage() {
     if (mode === 'signup') {
       const { data, error } = await supabase.auth.signUp({ email, password })
 
-if (data?.user?.email) {
-  await fetch('/api/notify-signup', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email: data.user.email }),
-  })
-}
       if (error) return setError(error.message)
+
+      if (data?.user?.email) {
+        await fetch('/api/notify-signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: data.user.email }),
+        })
+      }
+
       alert('Check your email to confirm your account.')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
