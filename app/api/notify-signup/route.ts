@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'alerts@nightscouthub.com',
+      from: 'no-reply@alerts.nightscouthub.com',
       to: process.env.SIGNUP_NOTIFY_TO_EMAIL!,
       subject: 'New Nightscout Hub signup',
       html: `
