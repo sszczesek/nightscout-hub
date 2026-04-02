@@ -16,15 +16,18 @@ export async function POST(req: Request) {
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 })
+      console.error('Missing STRIPE_SECRET_KEY')
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
     }
 
     if (!process.env.STRIPE_BASIC_PRICE_ID || !process.env.STRIPE_PRO_PRICE_ID) {
-      return NextResponse.json({ error: 'Missing Stripe price environment variables' }, { status: 500 })
+      console.error('Missing Stripe price environment variables')
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
     }
 
     if (!process.env.NEXT_PUBLIC_SITE_URL) {
-      return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SITE_URL' }, { status: 500 })
+      console.error('Missing NEXT_PUBLIC_SITE_URL')
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
     }
 
     const priceId = plan === 'basic' ? BASIC_PRICE_ID : PRO_PRICE_ID
@@ -38,17 +41,12 @@ export async function POST(req: Request) {
 
     if (userError) {
       console.error('Supabase auth.getUser error:', userError)
-      return NextResponse.json({ error: 'Could not read authenticated user' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
     }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    console.log('Creating checkout session for user:', user.id)
-    console.log('Plan:', plan)
-    console.log('Price ID:', priceId)
-    console.log('Site URL:', process.env.NEXT_PUBLIC_SITE_URL)
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -66,27 +64,9 @@ export async function POST(req: Request) {
       },
     })
 
-    console.log('Checkout session created:', session.id)
-
     return NextResponse.json({ url: session.url })
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Stripe checkout error:', error)
-
-    if (error instanceof Stripe.errors.StripeError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          type: error.type,
-          code: error.code ?? null,
-        },
-        { status: 500 }
-      )
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
   }
 }
