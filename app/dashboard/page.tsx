@@ -31,8 +31,6 @@ export default async function DashboardPage({
 
   if (!user) redirect('/login')
 
-  // If user just returned from Stripe Checkout, sync billing immediately
-  // using the Checkout Session so the dashboard unlocks right away.
   if (params?.checkout === 'success' && params?.session_id) {
     try {
       const admin = createAdminClient()
@@ -94,6 +92,10 @@ export default async function DashboardPage({
               Billing
             </Link>
           )}
+
+          <Link href="/support" className="underline">
+            Support
+          </Link>
 
           <LogoutButton />
         </div>
