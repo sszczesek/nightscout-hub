@@ -21,18 +21,22 @@ export default function AddProfilePage() {
   const [nightscoutUrl, setNightscoutUrl] = useState('')
   const [accessToken, setAccessToken] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setSaving(true)
 
     if (!displayName.trim()) {
       setError('Display name is required.')
+      setSaving(false)
       return
     }
 
     if (!isValidHttpUrl(nightscoutUrl)) {
       setError('Enter a valid Nightscout URL starting with http:// or https://')
+      setSaving(false)
       return
     }
 
@@ -42,9 +46,48 @@ export default function AddProfilePage() {
 
     if (!user) {
       setError('You must be logged in.')
+      setSaving(false)
       return
     }
 
+    // 🔥 Get billing info
+    const { data: billing } = await supabase
+      .from('user_billing')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const isGrandfathered = billing?.is_grandfathered === true
+    const hasActiveSubscription = billing?.subscription_status === 'active'
+    const plan = billing?.plan
+
+    // 🔥 Get current profile count
+    const { count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    const currentCount = count || 0
+
+    // 🔥 Determine max allowed
+    let maxProfiles = 1
+
+    if (isGrandfathered) {
+      maxProfiles = Infinity
+    } else if (hasActiveSubscription && plan === 'pro') {
+      maxProfiles = Infinity
+    } else if (hasActiveSubscription && plan === 'basic') {
+      maxProfiles = 2
+    }
+
+    // 🔥 Enforce limit
+    if (currentCount >= maxProfiles) {
+      router.push('/pricing?reason=limit')
+      setSaving(false)
+      return
+    }
+
+    // 🔥 Save profile
     const { error } = await supabase.from('profiles').insert({
       user_id: user.id,
       display_name: displayName.trim(),
@@ -54,11 +97,17 @@ export default function AddProfilePage() {
 
     if (error) {
       setError(error.message)
+      setSaving(false)
+      return
+    }
+
+    // 🔥 After first save → force payment if not subscribed
+    if (!isGrandfathered && !hasActiveSubscription) {
+      router.push('/pricing?reason=unlock')
       return
     }
 
     router.push('/dashboard')
-    router.refresh()
   }
 
   return (
@@ -87,8 +136,11 @@ export default function AddProfilePage() {
           onChange={(e) => setAccessToken(e.target.value)}
         />
 
-        <button className="bg-black text-white px-4 py-2 rounded">
-          Save profile
+        <button
+          disabled={saving}
+          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save profile'}
         </button>
       </form>
 

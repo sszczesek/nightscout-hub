@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Reading = {
   id: string
@@ -13,7 +13,59 @@ type Reading = {
   iob?: number | null
   cob?: number | null
   error?: string
+  isDemo?: boolean
 }
+
+type ProfilesGridProps = {
+  canViewRealProfiles?: boolean
+}
+
+const demoProfiles: Reading[] = [
+  {
+    id: 'demo-1',
+    display_name: 'Paige',
+    nightscout_url: '#',
+    bg: 148,
+    arrow: '→',
+    date: new Date(Date.now() - 2 * 60000).toISOString(),
+    iob: 0.9,
+    cob: 4.2,
+    isDemo: true,
+  },
+  {
+    id: 'demo-2',
+    display_name: 'Tanner',
+    nightscout_url: '#',
+    bg: 212,
+    arrow: '↗',
+    date: new Date(Date.now() - 6 * 60000).toISOString(),
+    iob: 1.8,
+    cob: 12.5,
+    isDemo: true,
+  },
+  {
+    id: 'demo-3',
+    display_name: 'Kerry',
+    nightscout_url: '#',
+    bg: 104,
+    arrow: '→',
+    date: new Date(Date.now() - 1 * 60000).toISOString(),
+    iob: 0.3,
+    cob: 0.0,
+    isDemo: true,
+  },
+  {
+    id: 'demo-4',
+    display_name: 'Shane',
+    nightscout_url: '#',
+    bg: 126,
+    arrow: '↘',
+    date: new Date(Date.now() - 4 * 60000).toISOString(),
+    iob: 0.7,
+    cob: 2.1,
+    isDemo: true,
+  },
+]
 
 function getBgStatus(bg?: number | null) {
   if (bg == null) return ''
@@ -32,12 +84,9 @@ function formatTimeAgo(dateString?: string | null) {
 
   const date = new Date(dateString)
   const now = new Date()
-
   const diffMs = now.getTime() - date.getTime()
 
-  if (Number.isNaN(diffMs) || diffMs < 0) {
-    return 'Just now'
-  }
+  if (Number.isNaN(diffMs) || diffMs < 0) return 'Just now'
 
   const diffMinutes = Math.floor(diffMs / 60000)
 
@@ -54,13 +103,22 @@ function formatTimeAgo(dateString?: string | null) {
   return `${diffDays} days ago`
 }
 
-export default function ProfilesGrid() {
+export default function ProfilesGrid({
+  canViewRealProfiles = true,
+}: ProfilesGridProps) {
   const [items, setItems] = useState<Reading[]>([])
   const [loading, setLoading] = useState(true)
   const [pageError, setPageError] = useState('')
-  const [nowTick, setNowTick] = useState(Date.now())
+  const [, setNowTick] = useState(Date.now())
 
   async function load() {
+    if (!canViewRealProfiles) {
+      setItems([])
+      setLoading(false)
+      setPageError('')
+      return
+    }
+
     try {
       setPageError('')
       const controller = new AbortController()
@@ -113,26 +171,40 @@ export default function ProfilesGrid() {
       clearInterval(loadTimer)
       clearInterval(clockTimer)
     }
-  }, [])
+  }, [canViewRealProfiles])
 
-  if (loading) return <p>Loading...</p>
-  if (pageError) return <p className="text-red-600">{pageError}</p>
+  const visibleItems = useMemo(() => {
+    return canViewRealProfiles ? items : demoProfiles
+  }, [canViewRealProfiles, items])
+
+  if (loading && canViewRealProfiles) return <p>Loading...</p>
+  if (pageError && canViewRealProfiles) return <p className="text-red-600">{pageError}</p>
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <div
           key={item.id}
           className="border rounded-2xl p-4 block shadow-sm"
         >
           <div className="flex justify-between items-start gap-4">
             <a
-              href={item.nightscout_url}
-              target="_blank"
-              rel="noreferrer"
+              href={item.isDemo ? '#' : item.nightscout_url}
+              target={item.isDemo ? undefined : '_blank'}
+              rel={item.isDemo ? undefined : 'noreferrer'}
+              onClick={(e) => {
+                if (item.isDemo) e.preventDefault()
+              }}
               className="block flex-1"
             >
-              <div className="text-lg font-semibold">{item.display_name}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-lg font-semibold">{item.display_name}</div>
+                {item.isDemo && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-200">
+                    Demo
+                  </span>
+                )}
+              </div>
 
               {item.error ? (
                 <div className="text-red-600 mt-2">{item.error}</div>
@@ -157,21 +229,23 @@ export default function ProfilesGrid() {
               )}
             </a>
 
-            <div className="flex flex-col items-end gap-2">
-              <Link
-                href={`/dashboard/profiles/${item.id}/edit`}
-                className="text-sm underline"
-              >
-                Edit
-              </Link>
+            {!item.isDemo && (
+              <div className="flex flex-col items-end gap-2">
+                <Link
+                  href={`/dashboard/profiles/${item.id}/edit`}
+                  className="text-sm underline"
+                >
+                  Edit
+                </Link>
 
-              <button
-                onClick={() => handleDelete(item.id)}
-                className="text-sm underline text-red-400"
-              >
-                Delete
-              </button>
-            </div>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="text-sm underline text-red-400"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ))}
