@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type Reading = {
@@ -88,6 +89,7 @@ export default function ProfilesGrid() {
             <a
               href={item.nightscout_url}
               target="_blank"
+              rel="noreferrer"
               className="block flex-1"
             >
               <div className="text-lg font-semibold">{item.display_name}</div>
@@ -106,12 +108,21 @@ export default function ProfilesGrid() {
               )}
             </a>
 
-            <button
-              onClick={() => handleDelete(item.id)}
-              className="text-sm underline text-red-400"
-            >
-              Delete
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <Link
+                href={`/dashboard/profiles/${item.id}/edit`}
+                className="text-sm underline"
+              >
+                Edit
+              </Link>
+
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="text-sm underline text-red-400"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       ))}
