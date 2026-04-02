@@ -27,10 +27,38 @@ function formatNumber(value?: number | null) {
   return Number(value).toFixed(1)
 }
 
+function formatTimeAgo(dateString?: string | null) {
+  if (!dateString) return 'No recent reading'
+
+  const date = new Date(dateString)
+  const now = new Date()
+
+  const diffMs = now.getTime() - date.getTime()
+
+  if (Number.isNaN(diffMs) || diffMs < 0) {
+    return 'Just now'
+  }
+
+  const diffMinutes = Math.floor(diffMs / 60000)
+
+  if (diffMinutes < 1) return 'Just now'
+  if (diffMinutes === 1) return '1 min ago'
+  if (diffMinutes < 60) return `${diffMinutes} min ago`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours === 1) return '1 hour ago'
+  if (diffHours < 24) return `${diffHours} hours ago`
+
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) return '1 day ago'
+  return `${diffDays} days ago`
+}
+
 export default function ProfilesGrid() {
   const [items, setItems] = useState<Reading[]>([])
   const [loading, setLoading] = useState(true)
   const [pageError, setPageError] = useState('')
+  const [nowTick, setNowTick] = useState(Date.now())
 
   async function load() {
     try {
@@ -78,8 +106,13 @@ export default function ProfilesGrid() {
 
   useEffect(() => {
     load()
-    const timer = setInterval(load, 60000)
-    return () => clearInterval(timer)
+    const loadTimer = setInterval(load, 60000)
+    const clockTimer = setInterval(() => setNowTick(Date.now()), 30000)
+
+    return () => {
+      clearInterval(loadTimer)
+      clearInterval(clockTimer)
+    }
   }, [])
 
   if (loading) return <p>Loading...</p>
@@ -118,7 +151,7 @@ export default function ProfilesGrid() {
                   </div>
 
                   <div className="text-sm text-gray-500 mt-1">
-                    {item.date ? `Updated: ${item.date}` : 'No recent reading'}
+                    Updated: {formatTimeAgo(item.date)}
                   </div>
                 </>
               )}
