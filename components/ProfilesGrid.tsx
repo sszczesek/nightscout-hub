@@ -27,7 +27,7 @@ const demoProfiles: Reading[] = [
     nightscout_url: '#',
     bg: 148,
     arrow: '→',
-    date: new Date(Date.now() - 2 * 60000).toISOString(),
+    date: '2026-04-02T14:00:00.000Z',
     iob: 0.9,
     cob: 4.2,
     isDemo: true,
@@ -38,7 +38,7 @@ const demoProfiles: Reading[] = [
     nightscout_url: '#',
     bg: 212,
     arrow: '↗',
-    date: new Date(Date.now() - 6 * 60000).toISOString(),
+    date: '2026-04-02T13:56:00.000Z',
     iob: 1.8,
     cob: 12.5,
     isDemo: true,
@@ -49,7 +49,7 @@ const demoProfiles: Reading[] = [
     nightscout_url: '#',
     bg: 104,
     arrow: '→',
-    date: new Date(Date.now() - 1 * 60000).toISOString(),
+    date: '2026-04-02T14:01:00.000Z',
     iob: 0.3,
     cob: 0.0,
     isDemo: true,
@@ -60,7 +60,7 @@ const demoProfiles: Reading[] = [
     nightscout_url: '#',
     bg: 126,
     arrow: '↘',
-    date: new Date(Date.now() - 4 * 60000).toISOString(),
+    date: '2026-04-02T13:58:00.000Z',
     iob: 0.7,
     cob: 2.1,
     isDemo: true,
@@ -137,7 +137,7 @@ export default function ProfilesGrid({
       }
 
       const data = await res.json()
-      setItems(data)
+      setItems(Array.isArray(data) ? data : [])
     } catch {
       setPageError('Could not load readings.')
     } finally {
