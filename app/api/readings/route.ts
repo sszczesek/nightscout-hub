@@ -15,6 +15,13 @@ function mapDirection(direction?: string | null) {
   return map[direction || ''] || '→'
 }
 
+function firstNumber(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+  }
+  return null
+}
+
 export async function GET() {
   const supabase = await createClient()
 
@@ -38,38 +45,73 @@ export async function GET() {
   const results = await Promise.all(
     (profiles || []).map(async (profile) => {
       try {
-        const url = new URL('/api/v1/entries.json?count=1', profile.nightscout_url)
+        const entriesUrl = new URL('/api/v1/entries.json?count=1', profile.nightscout_url)
+        const deviceStatusUrl = new URL('/api/v1/devicestatus.json?count=1', profile.nightscout_url)
 
         const headers: HeadersInit = {}
         if (profile.access_token) {
           headers['api-secret'] = profile.access_token
         }
 
-        const response = await fetch(url.toString(), {
-          headers,
-          cache: 'no-store',
-        })
+        const [entriesResponse, deviceStatusResponse] = await Promise.all([
+          fetch(entriesUrl.toString(), {
+            headers,
+            cache: 'no-store',
+          }),
+          fetch(deviceStatusUrl.toString(), {
+            headers,
+            cache: 'no-store',
+          }),
+        ])
 
-        if (!response.ok) {
+        if (!entriesResponse.ok) {
           return {
             id: profile.id,
             display_name: profile.display_name,
             nightscout_url: profile.nightscout_url,
-            error: `Nightscout returned ${response.status}`,
+            error: `Nightscout returned ${entriesResponse.status}`,
           }
         }
 
-        const data = await response.json()
-        const latest = data?.[0]
+        const entriesData = await entriesResponse.json()
+        const latestEntry = entriesData?.[0]
+
+        let iob: number | null = null
+        let cob: number | null = null
+
+        if (deviceStatusResponse.ok) {
+          const deviceStatusData = await deviceStatusResponse.json()
+          const latestStatus = deviceStatusData?.[0]
+
+          iob = firstNumber(
+            latestStatus?.loop?.iob?.iob,
+            latestStatus?.openaps?.iob?.iob,
+            latestStatus?.openaps?.suggested?.IOB,
+            latestStatus?.openaps?.enacted?.IOB,
+            latestStatus?.loop?.iob,
+            latestStatus?.iob
+          )
+
+          cob = firstNumber(
+            latestStatus?.loop?.cob?.cob,
+            latestStatus?.openaps?.suggested?.COB,
+            latestStatus?.openaps?.suggested?.mealCOB,
+            latestStatus?.openaps?.enacted?.COB,
+            latestStatus?.loop?.cob,
+            latestStatus?.cob
+          )
+        }
 
         return {
           id: profile.id,
           display_name: profile.display_name,
           nightscout_url: profile.nightscout_url,
-          bg: latest?.sgv ?? null,
-          direction: latest?.direction ?? null,
-          arrow: mapDirection(latest?.direction),
-          date: latest?.dateString ?? null,
+          bg: latestEntry?.sgv ?? null,
+          direction: latestEntry?.direction ?? null,
+          arrow: mapDirection(latestEntry?.direction),
+          date: latestEntry?.dateString ?? null,
+          iob,
+          cob,
         }
       } catch {
         return {

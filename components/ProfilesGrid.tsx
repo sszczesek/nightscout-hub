@@ -10,6 +10,8 @@ type Reading = {
   bg?: number | null
   arrow?: string
   date?: string | null
+  iob?: number | null
+  cob?: number | null
   error?: string
 }
 
@@ -18,6 +20,11 @@ function getBgStatus(bg?: number | null) {
   if (bg < 70) return 'text-red-500'
   if (bg > 180) return 'text-yellow-400'
   return 'text-green-400'
+}
+
+function formatNumber(value?: number | null) {
+  if (value == null) return '--'
+  return Number(value).toFixed(1)
 }
 
 export default function ProfilesGrid() {
@@ -101,6 +108,15 @@ export default function ProfilesGrid() {
                   <div className={`text-4xl font-bold mt-2 ${getBgStatus(item.bg)}`}>
                     {item.bg ?? '--'} {item.arrow || ''}
                   </div>
+
+                  <div className="text-sm text-gray-300 mt-2">
+                    COB: {formatNumber(item.cob)}g
+                  </div>
+
+                  <div className="text-sm text-gray-300">
+                    IOB: {formatNumber(item.iob)}u
+                  </div>
+
                   <div className="text-sm text-gray-500 mt-1">
                     {item.date ? `Updated: ${item.date}` : 'No recent reading'}
                   </div>
