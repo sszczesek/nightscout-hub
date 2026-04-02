@@ -4,8 +4,10 @@ import { useState } from 'react'
 
 export default function PricingClient({
   reason,
+  currentPlan,
 }: {
   reason: string | null
+  currentPlan: string | null
 }) {
   const [loadingPlan, setLoadingPlan] = useState<'basic' | 'pro' | null>(null)
   const [error, setError] = useState('')
@@ -45,6 +47,9 @@ export default function PricingClient({
     }
   }
 
+  const showBasic = currentPlan !== 'basic' && currentPlan !== 'grandfathered'
+  const showPro = currentPlan !== 'pro' && currentPlan !== 'grandfathered'
+
   return (
     <main className="max-w-3xl mx-auto p-6">
       <div className="text-center mb-10">
@@ -65,45 +70,67 @@ export default function PricingClient({
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="border rounded-2xl p-6">
-          <h2 className="text-2xl font-semibold mb-2">Basic</h2>
-          <p className="text-3xl font-bold mb-4">
-            $5<span className="text-base font-normal">/month</span>
-          </p>
-          <ul className="text-sm text-gray-300 space-y-2 mb-6">
-            <li>Up to 2 Nightscout profiles</li>
-            <li>Live BG, COB, and IOB grid</li>
-            <li>Simple household monitoring</li>
-          </ul>
-          <button
-            onClick={() => checkout('basic')}
-            disabled={loadingPlan !== null}
-            className="w-full bg-white text-black px-4 py-2 rounded-lg disabled:opacity-50"
-          >
-            {loadingPlan === 'basic' ? 'Loading...' : 'Choose Basic'}
-          </button>
-        </div>
+      {currentPlan && currentPlan !== 'grandfathered' && (
+        <p className="text-center text-sm text-gray-400 mb-6">
+          Current plan: <span className="font-semibold capitalize">{currentPlan}</span>
+        </p>
+      )}
 
-        <div className="border rounded-2xl p-6">
-          <h2 className="text-2xl font-semibold mb-2">Pro</h2>
-          <p className="text-3xl font-bold mb-4">
-            $10<span className="text-base font-normal">/month</span>
-          </p>
-          <ul className="text-sm text-gray-300 space-y-2 mb-6">
-            <li>Unlimited Nightscout profiles</li>
-            <li>Live BG, COB, and IOB grid</li>
-            <li>Best for larger families or caregivers</li>
-          </ul>
-          <button
-            onClick={() => checkout('pro')}
-            disabled={loadingPlan !== null}
-            className="w-full bg-white text-black px-4 py-2 rounded-lg disabled:opacity-50"
-          >
-            {loadingPlan === 'pro' ? 'Loading...' : 'Choose Pro'}
-          </button>
-        </div>
+      {currentPlan === 'grandfathered' && (
+        <p className="text-center text-sm text-gray-400 mb-6">
+          Your account is grandfathered and does not need a paid plan.
+        </p>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {showBasic && (
+          <div className="border rounded-2xl p-6">
+            <h2 className="text-2xl font-semibold mb-2">Basic</h2>
+            <p className="text-3xl font-bold mb-4">
+              $5<span className="text-base font-normal">/month</span>
+            </p>
+            <ul className="text-sm text-gray-300 space-y-2 mb-6">
+              <li>Up to 2 Nightscout profiles</li>
+              <li>Live BG, COB, and IOB grid</li>
+              <li>Simple household monitoring</li>
+            </ul>
+            <button
+              onClick={() => checkout('basic')}
+              disabled={loadingPlan !== null}
+              className="w-full bg-white text-black px-4 py-2 rounded-lg disabled:opacity-50"
+            >
+              {loadingPlan === 'basic' ? 'Loading...' : 'Choose Basic'}
+            </button>
+          </div>
+        )}
+
+        {showPro && (
+          <div className="border rounded-2xl p-6">
+            <h2 className="text-2xl font-semibold mb-2">Pro</h2>
+            <p className="text-3xl font-bold mb-4">
+              $10<span className="text-base font-normal">/month</span>
+            </p>
+            <ul className="text-sm text-gray-300 space-y-2 mb-6">
+              <li>Unlimited Nightscout profiles</li>
+              <li>Live BG, COB, and IOB grid</li>
+              <li>Best for larger families or caregivers</li>
+            </ul>
+            <button
+              onClick={() => checkout('pro')}
+              disabled={loadingPlan !== null}
+              className="w-full bg-white text-black px-4 py-2 rounded-lg disabled:opacity-50"
+            >
+              {loadingPlan === 'pro' ? 'Loading...' : currentPlan === 'basic' ? 'Upgrade to Pro' : 'Choose Pro'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {!showBasic && !showPro && (
+        <p className="text-center text-gray-300">
+          No additional plans are available for your current account state.
+        </p>
+      )}
 
       {error && (
         <p className="text-red-500 text-sm text-center mt-6 break-words">{error}</p>
